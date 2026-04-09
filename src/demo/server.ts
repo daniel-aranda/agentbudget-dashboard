@@ -2,6 +2,7 @@ import { AgentBudget } from "@agentbudget/agentbudget";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
 import { handleDashboardRequest } from "../lib/dashboard.js";
+import { PROVIDER_MODEL_CATALOG } from "../lib/models.js";
 import { MemoryTimelineStore, RedisTimelineStore, type TimelineStore } from "../lib/timeline.js";
 import { TrackedBudgetSession } from "../lib/tracked-session.js";
 import { sendChatCompletion, type DemoMessage, type DemoProvider } from "./providers.js";
@@ -68,9 +69,10 @@ async function handleDemoRequest(
     writeJson(response, 200, {
       store: storeLabel(store),
       defaults: {
-        openai: "gpt-4o-mini",
-        anthropic: "claude-3-5-haiku-20241022",
+        openai: PROVIDER_MODEL_CATALOG.openai.defaultModel,
+        anthropic: PROVIDER_MODEL_CATALOG.anthropic.defaultModel,
       },
+      providers: PROVIDER_MODEL_CATALOG,
     });
     return;
   }
@@ -242,10 +244,11 @@ function normalizeModel(provider: DemoProvider, value: unknown): string {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
   }
-  return provider === "openai" ? "gpt-4o-mini" : "claude-3-5-haiku-20241022";
+  return PROVIDER_MODEL_CATALOG[provider].defaultModel;
 }
 
 function renderChatPage(storeMode: string): string {
+  const providerCatalog = JSON.stringify(PROVIDER_MODEL_CATALOG);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -316,7 +319,8 @@ function renderChatPage(storeMode: string): string {
           <p>1. Create a chat session with a provider, model, and budget.</p>
           <p>2. Each completion goes through AgentBudget for cost tracking.</p>
           <p>3. The dashboard reads the same timeline store and plots spend by model and tool.</p>
-          <p>4. API keys stay only in this process memory. They are never written into the timeline store.</p>
+          <p>4. Frontier models can take longer, so the demo caps replies and times out after 60 seconds.</p>
+          <p>5. API keys stay only in this process memory. They are never written into the timeline store.</p>
         </div>
       </div>
     </section>
@@ -331,7 +335,7 @@ function renderChatPage(storeMode: string): string {
             </select>
           </label>
           <label>Model
-            <input id="model" value="gpt-4o-mini" />
+            <select id="model"></select>
           </label>
           <label>Budget
             <input id="budget" value="$5.00" />
@@ -372,7 +376,7 @@ function renderChatPage(storeMode: string): string {
   </div>
   <script>
     const state = { sessionId: null, dashboardUrl: null, model: null, provider: null };
-    const providerDefaults = { openai: "gpt-4o-mini", anthropic: "claude-3-5-haiku-20241022" };
+    const providerCatalog = ${providerCatalog};
     const providerEl = document.getElementById("provider");
     const modelEl = document.getElementById("model");
     const budgetEl = document.getElementById("budget");
@@ -389,12 +393,15 @@ function renderChatPage(storeMode: string): string {
     const spentEl = document.getElementById("spent");
     const remainingEl = document.getElementById("remaining");
 
-    providerEl.addEventListener("change", () => { modelEl.value = providerDefaults[providerEl.value]; });
+    providerEl.addEventListener("change", () => {
+      syncModelOptions(providerEl.value, providerCatalog[providerEl.value].defaultModel);
+    });
     createEl.addEventListener("click", createSession);
     dashboardEl.addEventListener("click", () => { if (state.dashboardUrl) window.open(state.dashboardUrl, "_blank", "noopener"); });
     sendEl.addEventListener("click", sendMessage);
     refreshEl.addEventListener("click", refreshState);
 
+    syncModelOptions(providerEl.value, providerCatalog[providerEl.value].defaultModel);
     renderMessages([]);
 
     async function createSession() {
@@ -426,7 +433,7 @@ function renderChatPage(storeMode: string): string {
       if (!state.sessionId) return;
       try {
         sendEl.disabled = true;
-        setStatus("Calling provider...");
+        setStatus("Calling provider... frontier models can take a bit.");
         const response = await fetch("/api/sessions/" + encodeURIComponent(state.sessionId) + "/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -462,6 +469,8 @@ function renderChatPage(storeMode: string): string {
       state.dashboardUrl = session.dashboard_url;
       state.model = session.model;
       state.provider = session.provider;
+      providerEl.value = session.provider;
+      syncModelOptions(session.provider, session.model);
       sessionIdEl.textContent = session.session_id;
       sessionProviderEl.textContent = session.provider + " · " + session.model;
       spentEl.textContent = "$" + Number(session.spent || 0).toFixed(6);
@@ -491,6 +500,24 @@ function renderChatPage(storeMode: string): string {
     function setStatus(message, isError = false) {
       statusEl.textContent = message;
       statusEl.className = "status" + (isError ? " error" : "");
+    }
+
+    function syncModelOptions(provider, selectedModel) {
+      const catalog = providerCatalog[provider];
+      const options = [...catalog.models];
+      if (selectedModel && !options.some((option) => option.value === selectedModel)) {
+        options.unshift({ value: selectedModel, label: selectedModel + " (resolved)" });
+      }
+
+      modelEl.innerHTML = "";
+      for (const option of options) {
+        const element = document.createElement("option");
+        element.value = option.value;
+        element.textContent = option.label;
+        modelEl.appendChild(element);
+      }
+
+      modelEl.value = selectedModel || catalog.defaultModel;
     }
   </script>
 </body>

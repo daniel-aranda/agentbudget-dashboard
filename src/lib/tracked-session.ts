@@ -7,9 +7,12 @@ import {
   type SessionOptions,
 } from "@agentbudget/agentbudget";
 
+import { registerSupportedModelPricing } from "./models.js";
 import { round6, type SessionMetadata, type TimelineEvent, type TimelineStore } from "./timeline.js";
 
 type ProviderCategory = "llm" | "tool";
+
+registerSupportedModelPricing();
 
 export class TrackedBudgetSession {
   private readonly categoryTotals = {
