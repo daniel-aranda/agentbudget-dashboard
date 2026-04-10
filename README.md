@@ -52,10 +52,11 @@ That visibility layer is critical for:
 
 ---
 
-## What you can see
+## What you can see 🔍
 
-🔍 View full dashboard preview:  
-[Open full-size image](https://github.com/user-attachments/assets/d88b3288-d7f5-444c-a769-854d9d1c643e)
+<a href="https://github.com/user-attachments/assets/d88b3288-d7f5-444c-a769-854d9d1c643e" target="_blank">
+  <img width="500" alt="AgentBudget Dashboard Preview" src="https://github.com/user-attachments/assets/d88b3288-d7f5-444c-a769-854d9d1c643e" />
+</a>
 
 ### Live budget health
 
