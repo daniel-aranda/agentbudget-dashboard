@@ -16,7 +16,7 @@ This repo is intentionally separate from `agentbudget` itself:
 - built-in dashboard page with `llm/by_model` and `tools/by_tool`
 - demo chat app that asks for your OpenAI or Anthropic API key and lets you watch spend in another tab
 
-<img width="1103" height="1453" alt="image" src="https://github.com/user-attachments/assets/0f455ee6-d666-4f50-98cb-676af97752fc" />
+<img width="1106" height="1458" alt="image" src="https://github.com/user-attachments/assets/6c83050b-f893-426b-b355-6002bd2e8063" />
 
 ## Quick Start
 
