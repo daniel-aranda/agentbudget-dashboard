@@ -393,6 +393,8 @@ function renderChatPage(storeMode: string): string {
     .stack { display: grid; gap: 12px; }
     label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
     .budget-field input { max-width: 180px; }
+    .budget-input { display: inline-flex; align-items: center; gap: 10px; }
+    .budget-prefix { color: var(--muted); font: 600 16px ui-monospace, SFMono-Regular, Menlo, monospace; }
     input, select, textarea, button { font: inherit; }
     input, select, textarea { width: 100%; border: 1px solid var(--border-bright); background: #0d0d11; color: var(--text); padding: 11px 12px; }
     input[readonly], select:disabled, textarea:disabled { color: #d9d9e2; background: rgba(255,255,255,0.03); cursor: default; }
@@ -455,7 +457,10 @@ function renderChatPage(storeMode: string): string {
             <select id="model"></select>
           </label>
           <label class="budget-field">Budget
-            <input id="budget" value="$5.00" />
+            <div class="budget-input">
+              <span class="budget-prefix" aria-hidden="true">$</span>
+              <input id="budget" type="number" inputmode="decimal" min="0.01" step="0.01" value="5.00" />
+            </div>
           </label>
           <div class="button-row">
             <button id="createSession">Create session</button>
@@ -533,9 +538,26 @@ function renderChatPage(storeMode: string): string {
     configureProviderUi();
     applySessionMode(false);
 
+    function normalizedBudgetValue() {
+      const value = Number(budgetEl.value);
+      if (!Number.isFinite(value) || value <= 0) {
+        return null;
+      }
+      return "$" + value.toFixed(2);
+    }
+
+    function budgetNumberString(value) {
+      return String(value).replace(/[^0-9.]/g, "") || "5.00";
+    }
+
     async function createSession() {
       if (!state.provider) {
         setStatus("No Provider Key Available.", true);
+        return;
+      }
+      const budgetValue = normalizedBudgetValue();
+      if (!budgetValue) {
+        setStatus("Budget must be a positive number.", true);
         return;
       }
       try {
@@ -546,7 +568,7 @@ function renderChatPage(storeMode: string): string {
           body: JSON.stringify({
             provider: state.provider,
             model: modelEl.value,
-            budget: budgetEl.value
+            budget: budgetValue
           })
         });
         const payload = await response.json();
@@ -596,7 +618,7 @@ function renderChatPage(storeMode: string): string {
         providerReadonlyEl.value = session.provider_label || demoConfig.providerLabels[session.provider];
       }
       syncModelOptions(session.provider, session.model);
-      budgetEl.value = session.budget;
+      budgetEl.value = budgetNumberString(session.budget);
       sessionIdEl.textContent = session.session_id;
       sessionProviderEl.textContent =
         (session.provider_label || demoConfig.providerLabels[session.provider]) + " · " + session.model;

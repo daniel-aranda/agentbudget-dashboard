@@ -30,6 +30,7 @@ const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
 interface DashboardRecentEvent {
   timestamp_ms: number;
+  event_kind: "assistant" | "tool" | "user";
   event_type_label: string;
   model_label: string;
   tokens: number;
@@ -237,7 +238,8 @@ function sumTokens(events: TimelineEvent[]): number {
 function mapRecentEvent(event: TimelineEvent): DashboardRecentEvent {
   return {
     timestamp_ms: event.timestamp_ms,
-    event_type_label: event.event_type === "llm" ? "assistant response" : "tool event",
+    event_kind: event.event_type === "llm" ? "assistant" : "tool",
+    event_type_label: event.event_type === "llm" ? "assistant response" : "tool call",
     model_label: event.model ?? event.tool_name ?? event.category_key ?? "unlabeled",
     tokens: (event.input_tokens || 0) + (event.output_tokens || 0),
     cost_delta: round6(event.cost),
@@ -317,7 +319,7 @@ const DASHBOARD_HTML = `<!doctype html>
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 7px 11px;
       border: 1px solid rgba(167, 139, 250, 0.28);
       background: linear-gradient(135deg, rgba(12,18,28,0.92), rgba(28,16,38,0.92));
       color: var(--accent-bright);
@@ -336,16 +338,16 @@ const DASHBOARD_HTML = `<!doctype html>
     }
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(360px, 540px);
-      gap: 28px;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 500px);
+      gap: 24px;
       align-items: end;
-      padding: 26px 0 20px;
+      padding: 18px 0 14px;
     }
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 7px 11px;
       border: 1px solid rgba(167, 139, 250, 0.18);
       background: rgba(139, 92, 246, 0.06);
       color: var(--muted);
@@ -354,11 +356,11 @@ const DASHBOARD_HTML = `<!doctype html>
       letter-spacing: 0.12em;
     }
     h1 {
-      margin: 16px 0 10px;
-      font-size: clamp(40px, 6vw, 78px);
-      line-height: 0.92;
+      margin: 10px 0 8px;
+      font-size: clamp(34px, 4.9vw, 58px);
+      line-height: 0.95;
       letter-spacing: -0.06em;
-      max-width: 780px;
+      max-width: 680px;
     }
     .gradient {
       background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent) 45%, var(--accent-pink) 100%);
@@ -368,15 +370,15 @@ const DASHBOARD_HTML = `<!doctype html>
     }
     .hero-copy {
       margin: 0;
-      max-width: 760px;
+      max-width: 620px;
       color: var(--muted);
-      font-size: 17px;
-      line-height: 1.65;
+      font-size: 15px;
+      line-height: 1.55;
     }
     .hero-narrative {
-      margin-top: 14px;
+      margin-top: 10px;
       color: #ddd6fe;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       letter-spacing: -0.02em;
     }
@@ -402,13 +404,13 @@ const DASHBOARD_HTML = `<!doctype html>
       align-items: stretch;
     }
     .health-card {
-      padding: 22px;
+      padding: 20px;
       display: grid;
-      gap: 18px;
-      min-height: 280px;
+      gap: 14px;
+      min-height: 248px;
     }
     .card-title {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       letter-spacing: -0.04em;
     }
@@ -420,11 +422,11 @@ const DASHBOARD_HTML = `<!doctype html>
     .health-top {
       display: flex;
       align-items: start;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 16px;
     }
     .health-value {
-      font-size: clamp(28px, 3vw, 42px);
+      font-size: clamp(26px, 2.8vw, 38px);
       font-weight: 800;
       letter-spacing: -0.05em;
     }
@@ -492,24 +494,29 @@ const DASHBOARD_HTML = `<!doctype html>
       flex-wrap: wrap;
       gap: 12px;
       color: var(--muted);
+      font-size: 12px;
+    }
+    .module-warning {
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(245, 158, 11, 0.24);
+      background: rgba(245, 158, 11, 0.08);
+      color: #fcd34d;
       font-size: 13px;
+      line-height: 1.45;
     }
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-content: start;
     }
     .metric-card {
-      padding: 18px;
-      min-height: 146px;
+      padding: 16px;
+      min-height: 124px;
       display: grid;
-      gap: 14px;
-    }
-    .metric-top {
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
+      align-content: start;
     }
     .metric-label {
       color: var(--muted-soft);
@@ -517,39 +524,41 @@ const DASHBOARD_HTML = `<!doctype html>
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
-    .metric-trend {
-      min-width: 26px;
-      height: 26px;
-      display: inline-grid;
-      place-items: center;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.07);
-      background: rgba(255,255,255,0.03);
-      color: var(--muted);
-      font-size: 13px;
-    }
     .metric-value {
-      font-size: clamp(28px, 2.9vw, 40px);
+      font-size: clamp(28px, 2.5vw, 36px);
       line-height: 0.96;
       font-weight: 800;
       letter-spacing: -0.05em;
     }
-    .metric-meta {
+    .metric-delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.45;
     }
-    .trend-up .metric-trend,
-    .metric-meta.trend-up { color: #f9a8d4; border-color: rgba(236,72,153,0.24); background: rgba(236,72,153,0.08); }
-    .trend-down .metric-trend,
-    .metric-meta.trend-down { color: #67e8f9; border-color: rgba(6,182,212,0.24); background: rgba(6,182,212,0.08); }
-    .trend-flat .metric-trend,
-    .metric-meta.trend-flat { color: var(--muted); }
+    .delta-arrow {
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+      flex: 0 0 auto;
+    }
+    .metric-card.trend-up .metric-delta { color: #f9a8d4; }
+    .metric-card.trend-up .delta-arrow { color: #f9a8d4; border-color: rgba(236,72,153,0.24); background: rgba(236,72,153,0.08); }
+    .metric-card.trend-down .metric-delta { color: #67e8f9; }
+    .metric-card.trend-down .delta-arrow { color: #67e8f9; border-color: rgba(6,182,212,0.24); background: rgba(6,182,212,0.08); }
+    .metric-card.trend-flat .metric-delta { color: var(--muted); }
     .filters {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin: 22px 0 18px;
+      margin: 14px 0 16px;
     }
     .filter {
       border: 1px solid rgba(255,255,255,0.08);
@@ -602,12 +611,12 @@ const DASHBOARD_HTML = `<!doctype html>
       position: relative;
       border: 1px solid rgba(255,255,255,0.05);
       background: linear-gradient(180deg, rgba(10,10,14,0.78), rgba(8,8,12,0.96));
-      min-height: 360px;
+      min-height: 408px;
       overflow: hidden;
     }
     .chart-stage svg {
       width: 100%;
-      height: 360px;
+      height: 408px;
       display: block;
       overflow: visible;
     }
@@ -642,7 +651,7 @@ const DASHBOARD_HTML = `<!doctype html>
     .event-head,
     .event-row {
       display: grid;
-      grid-template-columns: 120px minmax(150px, 1.1fr) minmax(180px, 1fr) 120px 120px;
+      grid-template-columns: 112px minmax(156px, 1.05fr) minmax(200px, 1fr) 112px 130px;
       gap: 12px;
       align-items: center;
     }
@@ -659,14 +668,46 @@ const DASHBOARD_HTML = `<!doctype html>
       background: linear-gradient(180deg, rgba(16,16,22,0.8), rgba(10,10,14,0.82));
       color: var(--text);
     }
+    .event-row.latest {
+      border-color: rgba(167, 139, 250, 0.22);
+      background: linear-gradient(180deg, rgba(26,18,36,0.82), rgba(10,10,14,0.88));
+      box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.06);
+    }
     .event-row:hover {
       border-color: rgba(167, 139, 250, 0.18);
       background: linear-gradient(180deg, rgba(22,18,30,0.88), rgba(10,10,14,0.9));
     }
-    .event-type { font-weight: 600; }
+    .event-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .event-badge.assistant {
+      color: #ddd6fe;
+      border-color: rgba(167, 139, 250, 0.24);
+      background: rgba(139, 92, 246, 0.12);
+    }
+    .event-badge.tool {
+      color: #67e8f9;
+      border-color: rgba(6, 182, 212, 0.24);
+      background: rgba(6, 182, 212, 0.1);
+    }
+    .event-badge.user {
+      color: #bfdbfe;
+      border-color: rgba(96, 165, 250, 0.24);
+      background: rgba(96, 165, 250, 0.1);
+    }
     .event-model { color: #ddd6fe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .event-muted { color: var(--muted); }
-    .event-cost { text-align: right; color: #f9a8d4; font-weight: 700; }
+    .event-muted { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .event-cost { text-align: right; color: #f9a8d4; font-weight: 800; font-variant-numeric: tabular-nums; }
     .empty {
       color: var(--muted);
       padding: 22px 4px 4px;
@@ -684,7 +725,6 @@ const DASHBOARD_HTML = `<!doctype html>
     @media (max-width: 1120px) {
       .hero,
       .overview-grid { grid-template-columns: 1fr; }
-      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 820px) {
       .shell { padding: 18px; }
@@ -696,12 +736,12 @@ const DASHBOARD_HTML = `<!doctype html>
         gap: 6px;
       }
       .event-cost { text-align: left; }
-      .chart-stage { min-height: 320px; }
-      .chart-stage svg { height: 320px; }
+      .chart-stage { min-height: 340px; }
+      .chart-stage svg { height: 340px; }
     }
     @media (max-width: 640px) {
       .shell { padding: 16px; }
-      .hero { padding: 20px 0 14px; }
+      .hero { padding: 14px 0 10px; }
       .filters { gap: 8px; }
       .filter { width: calc(50% - 4px); }
       .health-card,
@@ -720,8 +760,8 @@ const DASHBOARD_HTML = `<!doctype html>
     <section class="hero">
       <div>
         <div class="eyebrow" id="eyebrow">session timeline</div>
-        <h1><span class="gradient">BUDGET HEALTH</span><br /><span class="gradient">WITH LIVE</span><br /><span style="color: var(--muted);">SPEND CLARITY</span></h1>
-        <p class="hero-copy">Track burn rate, understand why spend moved, and see how quickly the current session is approaching its budget limit.</p>
+        <h1><span class="gradient">REAL-TIME SPEND</span><br /><span style="color: var(--text);">FOR THIS SESSION</span></h1>
+        <p class="hero-copy">Track budget health, understand what moved spend, and know how fast this session is burning through its limit.</p>
         <div class="hero-narrative" id="heroNarrative">Session is currently at 0.00% of budget.</div>
         <p class="error" id="error" hidden></p>
       </div>
@@ -732,8 +772,8 @@ const DASHBOARD_HTML = `<!doctype html>
             <div class="card-title">Budget health</div>
             <div class="card-subtle" id="healthStatus">Waiting for tracked data.</div>
           </div>
-          <div class="live-badge" style="padding: 6px 10px;"><span class="live-dot"></span> live</div>
         </div>
+        <div class="module-warning" id="summaryWarning" hidden></div>
         <div>
           <div class="health-value" id="healthValue">$0.000000 / $0.000000</div>
           <div class="health-meta" id="healthMeta">Projected remaining budget updates every 2 seconds.</div>
@@ -778,6 +818,7 @@ const DASHBOARD_HTML = `<!doctype html>
           </div>
         </div>
         <div class="filters" id="filters"></div>
+        <div class="module-warning" id="chartWarning" hidden></div>
         <div class="chart-stage" id="chartStage">
           <div class="chart-tooltip" id="chartTooltip" hidden>
             <div class="tooltip-time" id="tooltipTime">--</div>
@@ -789,34 +830,24 @@ const DASHBOARD_HTML = `<!doctype html>
 
       <section class="kpi-grid" id="kpiGrid">
         <article class="glass-card metric-card" id="metric-spent">
-          <div class="metric-top"><div class="metric-label">Total spent</div><div class="metric-trend" id="metric-spent-arrow">→</div></div>
+          <div class="metric-label">Total spent</div>
           <div class="metric-value" id="metric-spent-value">$0.000000</div>
-          <div class="metric-meta" id="metric-spent-meta">No change in last 5 min</div>
+          <div class="metric-delta" id="metric-spent-delta">No change in last 5 min</div>
         </article>
         <article class="glass-card metric-card" id="metric-remaining">
-          <div class="metric-top"><div class="metric-label">Remaining budget</div><div class="metric-trend" id="metric-remaining-arrow">→</div></div>
+          <div class="metric-label">Remaining budget</div>
           <div class="metric-value" id="metric-remaining-value">$0.000000</div>
-          <div class="metric-meta" id="metric-remaining-meta">No change in last 5 min</div>
-        </article>
-        <article class="glass-card metric-card" id="metric-burn">
-          <div class="metric-top"><div class="metric-label">Burn rate</div><div class="metric-trend" id="metric-burn-arrow">→</div></div>
-          <div class="metric-value" id="metric-burn-value">$0.000000 / min</div>
-          <div class="metric-meta" id="metric-burn-meta">No active burn</div>
-        </article>
-        <article class="glass-card metric-card" id="metric-exhaustion">
-          <div class="metric-top"><div class="metric-label">Budget exhausted in</div><div class="metric-trend" id="metric-exhaustion-arrow">→</div></div>
-          <div class="metric-value" id="metric-exhaustion-value">No active burn</div>
-          <div class="metric-meta" id="metric-exhaustion-meta">Waiting for burn rate signal</div>
+          <div class="metric-delta" id="metric-remaining-delta">No change in last 5 min</div>
         </article>
         <article class="glass-card metric-card" id="metric-messages">
-          <div class="metric-top"><div class="metric-label">Messages count</div><div class="metric-trend" id="metric-messages-arrow">→</div></div>
+          <div class="metric-label">Messages count</div>
           <div class="metric-value" id="metric-messages-value">0</div>
-          <div class="metric-meta" id="metric-messages-meta">No new messages in last 5 min</div>
+          <div class="metric-delta" id="metric-messages-delta">No new messages in last 5 min</div>
         </article>
         <article class="glass-card metric-card" id="metric-tokens">
-          <div class="metric-top"><div class="metric-label">Total tokens</div><div class="metric-trend" id="metric-tokens-arrow">→</div></div>
+          <div class="metric-label">Total tokens</div>
           <div class="metric-value" id="metric-tokens-value">0</div>
-          <div class="metric-meta" id="metric-tokens-meta">No new tokens in last 5 min</div>
+          <div class="metric-delta" id="metric-tokens-delta">No new tokens in last 5 min</div>
         </article>
       </section>
     </section>
@@ -859,6 +890,13 @@ const DASHBOARD_HTML = `<!doctype html>
 
     function money(value) {
       return '$' + Number(value || 0).toFixed(6);
+    }
+
+    function moneyCompact(value) {
+      const numeric = Number(value || 0);
+      if (numeric >= 1) return '$' + numeric.toFixed(2);
+      if (numeric >= 0.01) return '$' + numeric.toFixed(3);
+      return '$' + numeric.toFixed(4);
     }
 
     function formatInteger(value) {
@@ -905,6 +943,29 @@ const DASHBOARD_HTML = `<!doctype html>
       el.textContent = '';
     }
 
+    function showModuleWarning(id, message) {
+      const el = document.getElementById(id);
+      el.hidden = false;
+      el.textContent = message;
+    }
+
+    function clearModuleWarning(id) {
+      const el = document.getElementById(id);
+      el.hidden = true;
+      el.textContent = '';
+    }
+
+    async function fetchJson(url, fallbackMessage) {
+      const response = await fetch(url, { cache: 'no-store' });
+      const payload = await response.json().catch(function() {
+        return {};
+      });
+      if (!response.ok) {
+        throw new Error(payload.error || fallbackMessage);
+      }
+      return payload;
+    }
+
     function escapeHtml(value) {
       return String(value)
         .replaceAll('&', '&amp;')
@@ -930,23 +991,30 @@ const DASHBOARD_HTML = `<!doctype html>
       }
     }
 
-    function applyTrend(cardId, arrowId, metaId, direction, message) {
+    function applyDelta(cardId, deltaId, direction, message) {
       const card = document.getElementById(cardId);
-      const arrow = document.getElementById(arrowId);
-      const meta = document.getElementById(metaId);
+      const delta = document.getElementById(deltaId);
       card.classList.remove('trend-up', 'trend-down', 'trend-flat');
-      meta.classList.remove('trend-up', 'trend-down', 'trend-flat');
       const className = 'trend-' + direction;
       card.classList.add(className);
-      meta.classList.add(className);
-      arrow.textContent = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '→';
-      meta.textContent = message;
+      delta.innerHTML =
+        '<span class="delta-arrow">' +
+        (direction === 'up' ? '↑' : direction === 'down' ? '↓' : '→') +
+        '</span><span>' +
+        escapeHtml(message) +
+        '</span>';
     }
 
     function compareDirection(current, previous) {
       const epsilon = 0.000001;
       if (current > previous + epsilon) return 'up';
       if (current < previous - epsilon) return 'down';
+      return 'flat';
+    }
+
+    function invertDirection(direction) {
+      if (direction === 'up') return 'down';
+      if (direction === 'down') return 'up';
       return 'flat';
     }
 
@@ -977,7 +1045,7 @@ const DASHBOARD_HTML = `<!doctype html>
       document.getElementById('healthStatus').textContent =
         session.status === 'closed'
           ? 'Session closed. Final spend locked.'
-          : 'Live refresh every 2 seconds. Burn rate is based on the last 5 minutes.';
+          : 'Burn rate and projection are calculated from the last 5 minutes of spend.';
       document.getElementById('healthBurnRate').textContent =
         money(session.burn_rate_per_min) + ' / min';
       document.getElementById('healthExhaustion').textContent =
@@ -990,79 +1058,33 @@ const DASHBOARD_HTML = `<!doctype html>
         Math.max(0, Math.min(Number(session.session_percent || 0), 100)).toFixed(2) + '%';
 
       setMetricValue('metric-spent-value', money(session.total_spent));
-      applyTrend(
+      applyDelta(
         'metric-spent',
-        'metric-spent-arrow',
-        'metric-spent-meta',
+        'metric-spent-delta',
         compareDirection(session.last_5m_cost, session.previous_5m_cost),
         '+' + money(session.last_5m_cost).replace('$', '') + ' in last 5 min'
       );
 
       setMetricValue('metric-remaining-value', money(session.remaining));
-      applyTrend(
+      applyDelta(
         'metric-remaining',
-        'metric-remaining-arrow',
-        'metric-remaining-meta',
-        compareDirection(session.last_5m_cost, session.previous_5m_cost),
+        'metric-remaining-delta',
+        invertDirection(compareDirection(session.last_5m_cost, session.previous_5m_cost)),
         '-' + money(session.last_5m_cost).replace('$', '') + ' in last 5 min'
       );
 
-      setMetricValue('metric-burn-value', money(session.burn_rate_per_min) + ' / min');
-      applyTrend(
-        'metric-burn',
-        'metric-burn-arrow',
-        'metric-burn-meta',
-        compareDirection(session.burn_rate_per_min, session.previous_burn_rate_per_min),
-        money(Math.abs((session.burn_rate_per_min || 0) - (session.previous_burn_rate_per_min || 0))) +
-          ' vs prev 5 min'
-      );
-
-      setMetricValue(
-        'metric-exhaustion-value',
-        formatDurationMinutes(session.projected_exhaustion_minutes)
-      );
-      const exhaustionDirection = compareMinutes(
-        session.projected_exhaustion_minutes,
-        session.previous_projected_exhaustion_minutes
-      );
-      let exhaustionMeta = 'Waiting for burn rate signal';
-      if (
-        session.projected_exhaustion_minutes !== null &&
-        session.previous_projected_exhaustion_minutes !== null
-      ) {
-        const diff = Math.abs(
-          session.projected_exhaustion_minutes - session.previous_projected_exhaustion_minutes
-        );
-        exhaustionMeta =
-          formatDurationMinutes(diff) +
-          (session.projected_exhaustion_minutes < session.previous_projected_exhaustion_minutes
-            ? ' sooner vs prev 5 min'
-            : ' later vs prev 5 min');
-      } else if (session.projected_exhaustion_minutes !== null) {
-        exhaustionMeta = 'Projection now available from recent burn';
-      }
-      applyTrend(
-        'metric-exhaustion',
-        'metric-exhaustion-arrow',
-        'metric-exhaustion-meta',
-        exhaustionDirection,
-        exhaustionMeta
-      );
-
       setMetricValue('metric-messages-value', formatInteger(session.messages_count));
-      applyTrend(
+      applyDelta(
         'metric-messages',
-        'metric-messages-arrow',
-        'metric-messages-meta',
+        'metric-messages-delta',
         compareDirection(session.last_5m_messages, session.previous_5m_messages),
         '+' + formatInteger(session.last_5m_messages) + ' in last 5 min'
       );
 
       setMetricValue('metric-tokens-value', formatInteger(session.total_tokens));
-      applyTrend(
+      applyDelta(
         'metric-tokens',
-        'metric-tokens-arrow',
-        'metric-tokens-meta',
+        'metric-tokens-delta',
         compareDirection(session.last_5m_tokens, session.previous_5m_tokens),
         '+' + formatInteger(session.last_5m_tokens) + ' in last 5 min'
       );
@@ -1079,12 +1101,12 @@ const DASHBOARD_HTML = `<!doctype html>
         return;
       }
       empty.hidden = true;
-      for (const event of events) {
+      for (const [index, event] of events.entries()) {
         const row = document.createElement('div');
-        row.className = 'event-row';
+        row.className = 'event-row' + (index === 0 ? ' latest' : '');
         row.innerHTML =
           '<div class="event-muted">' + escapeHtml(timestampLabel(event.timestamp_ms)) + '</div>' +
-          '<div class="event-type">' + escapeHtml(event.event_type_label) + '</div>' +
+          '<div><span class="event-badge ' + escapeHtml(event.event_kind) + '">' + escapeHtml(event.event_type_label) + '</span></div>' +
           '<div class="event-model">' + escapeHtml(event.model_label) + '</div>' +
           '<div class="event-muted">' + escapeHtml(formatInteger(event.tokens)) + ' tokens</div>' +
           '<div class="event-cost">+' + escapeHtml(money(event.cost_delta).replace('$', '$')) + '</div>';
@@ -1152,8 +1174,8 @@ const DASHBOARD_HTML = `<!doctype html>
       const projectionPoints = buildProjectionPoints(session, timeline);
 
       const width = 940;
-      const height = 360;
-      const padding = { top: 18, right: 18, bottom: 28, left: 18 };
+      const height = 408;
+      const padding = { top: 18, right: 24, bottom: 42, left: 58 };
       const minX = Number(timeline.window_start_ms || actualPoints[0].timestamp_ms);
       const maxX = Math.max(
         Number(timeline.generated_at_ms || Date.now()),
@@ -1183,9 +1205,21 @@ const DASHBOARD_HTML = `<!doctype html>
       const alertStartValue = Number(session.budget || 0) * 0.85;
       const alertTop = yScale(Number(session.budget || 0));
       const alertBottom = yScale(alertStartValue);
-      const grid = [0.2, 0.4, 0.6, 0.8, 1].map(function(ratio) {
+      const yTicks = [0, 0.25, 0.5, 0.75, 1];
+      const xTicks = [minX, minX + rangeX / 2, maxX];
+      const grid = yTicks.map(function(ratio) {
         const y = yScale(maxY * ratio).toFixed(2);
-        return '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="rgba(255,255,255,0.07)" stroke-width="1" />';
+        return '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (width - padding.right) + '" y2="' + y + '" stroke="rgba(255,255,255,0.10)" stroke-width="1" />';
+      }).join('');
+      const yLabels = yTicks.map(function(ratio) {
+        const value = maxY * ratio;
+        const y = yScale(value).toFixed(2);
+        return '<text x="' + (padding.left - 10) + '" y="' + (Number(y) + 4).toFixed(2) + '" fill="rgba(161,161,170,0.88)" font-size="11" text-anchor="end">' + moneyCompact(value) + '</text>';
+      }).join('');
+      const xLabels = xTicks.map(function(value, index) {
+        const x = xScale(value).toFixed(2);
+        const anchor = index === 0 ? 'start' : index === xTicks.length - 1 ? 'end' : 'middle';
+        return '<text x="' + x + '" y="' + (height - 12) + '" fill="rgba(161,161,170,0.88)" font-size="11" text-anchor="' + anchor + '">' + new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</text>';
       }).join('');
 
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1198,26 +1232,29 @@ const DASHBOARD_HTML = `<!doctype html>
             '<stop offset="100%" stop-color="#ec4899"></stop>' +
           '</linearGradient>' +
           '<linearGradient id="chart-area-gradient" x1="0%" y1="0%" x2="0%" y2="100%">' +
-            '<stop offset="0%" stop-color="rgba(167,139,250,0.34)"></stop>' +
+            '<stop offset="0%" stop-color="rgba(167,139,250,0.26)"></stop>' +
             '<stop offset="100%" stop-color="rgba(167,139,250,0)"></stop>' +
           '</linearGradient>' +
           '<linearGradient id="budget-zone-gradient" x1="0%" y1="0%" x2="0%" y2="100%">' +
-            '<stop offset="0%" stop-color="rgba(251,113,133,0.2)"></stop>' +
-            '<stop offset="100%" stop-color="rgba(245,158,11,0.05)"></stop>' +
+            '<stop offset="0%" stop-color="rgba(251,113,133,0.18)"></stop>' +
+            '<stop offset="100%" stop-color="rgba(245,158,11,0.03)"></stop>' +
           '</linearGradient>' +
           '<filter id="line-glow" x="-30%" y="-30%" width="160%" height="160%">' +
-            '<feGaussianBlur stdDeviation="6" result="blur"></feGaussianBlur>' +
+            '<feGaussianBlur stdDeviation="7" result="blur"></feGaussianBlur>' +
             '<feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>' +
           '</filter>' +
         '</defs>' +
         '<rect x="' + padding.left + '" y="' + alertTop.toFixed(2) + '" width="' + (width - padding.left - padding.right) + '" height="' + Math.max(alertBottom - alertTop, 0).toFixed(2) + '" fill="url(#budget-zone-gradient)" />' +
         grid +
+        yLabels +
+        xLabels +
         '<path d="' + area + '" fill="url(#chart-area-gradient)"></path>' +
-        '<line x1="' + padding.left + '" y1="' + yScale(Number(session.budget || 0)).toFixed(2) + '" x2="' + (width - padding.right) + '" y2="' + yScale(Number(session.budget || 0)).toFixed(2) + '" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="8 8" />' +
+        '<line x1="' + padding.left + '" y1="' + yScale(Number(session.budget || 0)).toFixed(2) + '" x2="' + (width - padding.right) + '" y2="' + yScale(Number(session.budget || 0)).toFixed(2) + '" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 8" opacity="0.95" />' +
         (projectionPath
-          ? '<path d="' + projectionPath + '" fill="none" stroke="rgba(167,139,250,0.9)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="7 7" />'
+          ? '<path d="' + projectionPath + '" fill="none" stroke="rgba(196,181,253,0.66)" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="6 8" />'
           : '') +
-        '<path d="' + actualPath + '" fill="none" stroke="url(#chart-line-gradient)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#line-glow)" />' +
+        '<path d="' + actualPath + '" fill="none" stroke="url(#chart-line-gradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#line-glow)" />' +
+        '<line x1="' + padding.left + '" y1="' + (height - padding.bottom) + '" x2="' + (width - padding.right) + '" y2="' + (height - padding.bottom) + '" stroke="rgba(255,255,255,0.12)" stroke-width="1" />' +
         '<g id="hoverLayer"></g>';
       mount.appendChild(svg);
 
@@ -1273,23 +1310,55 @@ const DASHBOARD_HTML = `<!doctype html>
         return;
       }
 
-      try {
-        const [sessionResp, timelineResp] = await Promise.all([
-          fetch('/api/dashboard/session?sessionId=' + encodeURIComponent(sessionId), { cache: 'no-store' }),
-          fetch('/api/dashboard/timeline?sessionId=' + encodeURIComponent(sessionId) + '&period=' + activePeriod, { cache: 'no-store' })
-        ]);
+      const [sessionResult, timelineResult] = await Promise.allSettled([
+        fetchJson(
+          '/api/dashboard/session?sessionId=' + encodeURIComponent(sessionId),
+          'Could not load session summary.'
+        ),
+        fetchJson(
+          '/api/dashboard/timeline?sessionId=' + encodeURIComponent(sessionId) + '&period=' + activePeriod,
+          'Could not load spend progression.'
+        )
+      ]);
 
-        if (!sessionResp.ok || !timelineResp.ok) {
-          throw new Error('Could not load session data.');
-        }
-
-        const session = await sessionResp.json();
-        const timeline = await timelineResp.json();
+      let session = currentSession;
+      if (sessionResult.status === 'fulfilled') {
+        session = sessionResult.value;
         clearError();
+        clearModuleWarning('summaryWarning');
         updateOverview(session);
-        renderMainChart(session, timeline);
-      } catch (error) {
-        showError(error instanceof Error ? error.message : String(error));
+      } else if (!currentSession) {
+        showError(sessionResult.reason instanceof Error ? sessionResult.reason.message : String(sessionResult.reason));
+        return;
+      } else {
+        clearError();
+        showModuleWarning('summaryWarning', 'Summary refresh paused. Showing last known metrics.');
+      }
+
+      if (!session) {
+        return;
+      }
+
+      if (timelineResult.status === 'fulfilled') {
+        clearModuleWarning('chartWarning');
+        renderMainChart(session, timelineResult.value);
+      } else {
+        showModuleWarning(
+          'chartWarning',
+          currentTimeline
+            ? 'Spend progression refresh paused. Showing last known chart.'
+            : 'Spend progression is temporarily unavailable.'
+        );
+        if (!currentTimeline) {
+          renderMainChart(session, {
+            session_id: session.session_id,
+            budget: session.budget,
+            period_seconds: activePeriod,
+            window_start_ms: Date.now() - activePeriod * 1000,
+            generated_at_ms: Date.now(),
+            spend_points: []
+          });
+        }
       }
     }
 

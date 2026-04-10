@@ -44,7 +44,7 @@ test("dashboard routes expose session summary and aggregated timeline", async ()
     assert.equal(summary.recent_events.length, 2);
     assert.deepEqual(
       summary.recent_events.map((event) => event.event_type_label).sort(),
-      ["assistant response", "tool event"]
+      ["assistant response", "tool call"]
     );
     assert.ok(summary.total_spent > 0.25);
 
