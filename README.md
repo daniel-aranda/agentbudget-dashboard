@@ -55,7 +55,7 @@ That visibility layer is critical for:
 
 ## What you can see 🔍
 
-<a href="https://github.com/user-attachments/assets/d88b3288-d7f5-444c-a769-854d9d1c643e" target="_blank">
+<a href="https://github.com/user-attachments/assets/77535b99-84e7-461b-9223-82afe7955aee" target="_blank">
   <img width="500" alt="AgentBudget Dashboard Preview" src="https://github.com/user-attachments/assets/77535b99-84e7-461b-9223-82afe7955aee" />
 </a>
 
