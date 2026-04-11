@@ -1,94 +1,255 @@
 # AgentBudget Dashboard
+<a href="https://agentbudget.dev/">Agent Budget Website</a> | <a href="https://github.com/AgentBudget/agentbudget">Agent Budget SDK Githup repository</a>
 
-Open-source dashboard, timeline store, and demo app for watching [AgentBudget](https://github.com/AgentBudget/agentbudget) spend move in real time.
+**The eyes of AgentBudget.**
+Real-time budget intelligence, spend observability, and session risk visibility for AI agent workflows.
 
-This repo is intentionally separate from `agentbudget` itself:
+AgentBudget enforces hard spending limits.
+This dashboard helps teams **see where spend moved, why it moved, and what happens next**.
 
-- `agentbudget` stays a library
-- this repo owns the dashboard, timeline persistence, and example app
-- Redis is supported here without forcing infra into the core SDK
+It transforms raw budget enforcement into **live operational visibility**.
 
-## What You Get
+---
 
-- `TrackedBudgetSession` wrapper on top of `@agentbudget/agentbudget`
-- `MemoryTimelineStore` for zero-infra local runs
-- `RedisTimelineStore` for shared or multi-process timelines
-- built-in dashboard page with `llm/by_model` and `tools/by_tool`
-- demo chat app that asks for your OpenAI or Anthropic API key and lets you watch spend in another tab
+## Why this exists
 
-## Quick Start
+AI agents do not just need hard limits.
 
-### 1. Install
+Teams need to understand:
 
-```bash
-npm install
-```
+* what is driving spend
+* which model or tool is causing cost spikes
+* how fast the session is burning
+* whether budget exhaustion is approaching
+* what changed in the last few minutes
 
-### 2. Run with zero infra
+AgentBudget already solves **budget enforcement**.
 
-This uses the in-memory timeline store:
+This project extends that into **budget intelligence and real-time observability**.
 
-```bash
-npm run dev
-```
+Think of it as the **mission control layer for AgentBudget sessions**.
 
-Open:
+---
 
-- Chat app: [http://127.0.0.1:3000](http://127.0.0.1:3000)
-- Dashboard: created per session from the chat UI
+## Core idea
 
-### 3. Run with Redis
+This dashboard is built as a companion product for the AgentBudget SDK.
 
-Start Redis:
+While the SDK answers:
 
-```bash
-docker compose up redis
-```
+> **Should this session continue?**
 
-Then run the app against Redis:
+This dashboard answers:
 
-```bash
-TIMELINE_STORE=redis npm run dev
-```
+> **Why is spend moving and what is causing the risk?**
 
-You can also point to a custom Redis URL:
+That visibility layer is critical for:
 
-```bash
-AGENTBUDGET_DASHBOARD_REDIS_URL=redis://127.0.0.1:6379/0 TIMELINE_STORE=redis npm run dev
-```
+* product teams
+* infra teams
+* AI platform teams
+* founders running AI-heavy workflows
+* enterprise observability use cases
 
-## Demo Flow
+---
 
-1. Pick `OpenAI` or `Anthropic`
-2. Paste an API key
-3. Choose a model and budget
-4. Create a session
-5. Open the dashboard in a second tab
-6. Send chat messages and watch spend update live
+## What you can see 🔍
 
-API keys are only kept in the Node process memory for the demo session. They are not written into the timeline store.
+<a href="https://github.com/user-attachments/assets/d88b3288-d7f5-444c-a769-854d9d1c643e" target="_blank">
+  <img width="500" alt="AgentBudget Dashboard Preview" src="https://github.com/user-attachments/assets/77535b99-84e7-461b-9223-82afe7955aee" />
+</a>
 
-## Scripts
+### Live budget health
 
-```bash
-npm run dev
-npm run start
-npm run typecheck
-npm test
-```
+Track session health in real time with:
 
-## Library Example
+* total spent
+* remaining budget
+* burn rate
+* risk status
+* projected exhaustion
 
-```ts
-import { AgentBudget } from "@agentbudget/agentbudget";
-import { MemoryTimelineStore, TrackedBudgetSession } from "agentbudget-dashboard";
+Status states include:
 
-const tracked = await TrackedBudgetSession.start(
-  new AgentBudget("$5.00"),
-  new MemoryTimelineStore()
-);
+* **SAFE**
+* **WATCH**
+* **DANGER**
 
-await tracked.wrapUsage("gpt-4o", 100, 50);
-console.log(tracked.report());
-await tracked.close();
-```
+---
+
+### Spend progression
+
+Visualize how session cost evolves over time.
+
+Includes:
+
+* actual spend
+* projected spend
+* budget zone
+* burn velocity
+* trend windows
+
+Time windows:
+
+* last minute
+* last 3 minutes
+* last 5 minutes
+* last 10 minutes
+* last 30 minutes
+* last hour
+* last 6 hours
+
+---
+
+### Cost drivers
+
+Understand what is moving spend.
+
+Examples:
+
+* most expensive model
+* most expensive tool
+* largest single event
+* top cost contributors
+* recent acceleration
+
+This turns spend tracking into **causal analysis**.
+
+---
+
+### Session timeline
+
+A narrative timeline of spend events.
+
+Each event can show:
+
+* timestamp
+* event type
+* model
+* tokens
+* cost delta
+
+This makes it easy to answer:
+
+> **What happened right before cost increased?**
+
+---
+
+## Architecture
+
+This project intentionally lives outside the core AgentBudget SDK.
+
+The goal is to keep:
+
+* **core enforcement lightweight**
+* **observability extensible**
+* **storage pluggable**
+
+This allows the dashboard to evolve independently.
+
+### Components
+
+* **TrackedBudgetSession**
+* **timeline store**
+* **dashboard UI**
+* **demo application**
+* **memory / Redis persistence**
+
+---
+
+## Supported stores
+
+### In-memory
+
+Perfect for local development and demos.
+
+### Redis
+
+Recommended for production and multi-session persistence.
+
+This enables:
+
+* session recovery
+* shared team visibility
+* live dashboards across instances
+* historical analysis
+
+---
+
+## Product vision
+
+AgentBudget protects budgets.
+
+This dashboard helps teams operate them.
+
+The long-term vision is to evolve this into a full **AI spend observability layer**.
+
+Potential capabilities:
+
+* projected budget exhaustion ETA
+* anomaly detection
+* model cost comparison
+* per-tool cost attribution
+* org-level dashboards
+* team-based spend views
+* alerts and notifications
+* session replay
+* spend anomaly timeline
+
+---
+
+## Why this matters
+
+AI agent costs can escalate quickly.
+
+A loop, oversized responses, or excessive tool usage can burn through budget unexpectedly.
+
+Hard limits stop the damage.
+
+Visibility helps prevent it.
+
+This project is built around the belief that teams need both:
+
+* **enforcement**
+* **observability**
+
+Together, they create operational confidence for AI systems in production.
+
+---
+
+## Positioning
+
+A simple way to think about this project:
+
+> **AgentBudget enforces the limit.
+> This dashboard gives teams the eyes to understand it.**
+
+---
+
+## Demo
+
+Live dashboard example includes:
+
+* session spend
+* risk projection
+* cost timeline
+* event breakdown
+* model attribution
+
+---
+
+## Contributing
+
+Ideas and feedback are welcome.
+
+Particularly interested in:
+
+* observability workflows
+* AI infra tooling
+* enterprise budget governance
+* cost anomaly detection
+* agent platform integrations
+
+---
+
+Built with the vision of becoming the **official observability companion for AgentBudget**.
