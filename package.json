@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Open-source dashboard and demo app for live AgentBudget spend tracking",
   "scripts": {
-    "dev": "tsx watch src/demo/server.ts",
-    "start": "tsx src/demo/server.ts",
+    "dev": "bash -lc 'source ./set_env.sh >/dev/null 2>&1 || true; tsx watch src/demo/server.ts'",
+    "start": "bash -lc 'source ./set_env.sh >/dev/null 2>&1 || true; tsx src/demo/server.ts'",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/**/*.test.ts"
   },

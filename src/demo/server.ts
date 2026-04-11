@@ -538,6 +538,43 @@ function renderChatPage(storeMode: string): string {
     configureProviderUi();
     applySessionMode(false);
 
+    async function requestJson(url, init, fallbackMessage) {
+      let response;
+      try {
+        response = await fetch(url, init);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (/fetch failed|failed to fetch|networkerror|load failed/i.test(message)) {
+          throw new Error(
+            state.sessionId
+              ? "Connection lost. The demo server may have restarted. Refresh and create a new session."
+              : "Connection lost. Refresh the page and try again."
+          );
+        }
+        throw error;
+      }
+
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        const errorMessage =
+          payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+            ? payload.error
+            : fallbackMessage;
+        if (/Unknown session/i.test(errorMessage)) {
+          throw new Error("Session no longer exists in memory. Refresh and create a new session.");
+        }
+        throw new Error(errorMessage);
+      }
+
+      return payload;
+    }
+
     function normalizedBudgetValue() {
       const value = Number(budgetEl.value);
       if (!Number.isFinite(value) || value <= 0) {
@@ -562,7 +599,7 @@ function renderChatPage(storeMode: string): string {
       }
       try {
         setStatus("Creating tracked session...");
-        const response = await fetch("/api/sessions", {
+        const payload = await requestJson("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -570,9 +607,7 @@ function renderChatPage(storeMode: string): string {
             model: modelEl.value,
             budget: budgetValue
           })
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Could not create session");
+        }, "Could not create session");
         hydrateSession(payload);
         setStatus("Session ready. Click Open dashboard ↗ to open it in a new tab.");
       } catch (error) {
@@ -588,13 +623,11 @@ function renderChatPage(storeMode: string): string {
         state.isSending = true;
         syncComposerState();
         setStatus("Calling provider... frontier models can take a bit.");
-        const response = await fetch("/api/sessions/" + encodeURIComponent(state.sessionId) + "/messages", {
+        const payload = await requestJson("/api/sessions/" + encodeURIComponent(state.sessionId) + "/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: submittedContent })
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Message failed");
+        }, "Message failed");
         hydrateSession(payload.session);
         promptEl.value = "";
         setStatus("Message completed.");

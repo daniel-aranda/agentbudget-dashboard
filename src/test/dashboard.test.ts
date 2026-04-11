@@ -36,11 +36,23 @@ test("dashboard routes expose session summary and aggregated timeline", async ()
       total_spent: number;
       messages_count: number;
       total_tokens: number;
+      average_cost_per_message: number;
+      average_tokens_per_message: number;
+      dominant_model: string | null;
+      highest_single_event_cost: number;
+      projected_session_spend: number | null;
+      risk_label: string;
       recent_events: Array<{ event_type_label: string }>;
     };
     assert.equal(summary.session_id, tracked.id);
     assert.equal(summary.messages_count, 1);
     assert.equal(summary.total_tokens, 150);
+    assert.ok(summary.average_cost_per_message > 0);
+    assert.equal(summary.average_tokens_per_message, 150);
+    assert.equal(summary.dominant_model, "gpt-5.4-mini");
+    assert.equal(summary.highest_single_event_cost, 0.25);
+    assert.ok(summary.projected_session_spend !== null);
+    assert.ok(["SAFE", "WATCH", "DANGER"].includes(summary.risk_label));
     assert.equal(summary.recent_events.length, 2);
     assert.deepEqual(
       summary.recent_events.map((event) => event.event_type_label).sort(),
@@ -53,9 +65,18 @@ test("dashboard routes expose session summary and aggregated timeline", async ()
     ).then((response) => response.json())) as {
       budget: number;
       spend_points: Array<{ value: number }>;
+      token_points: Array<{ value: number }>;
+      burn_rate_points: Array<{ value: number }>;
+      burn_window_seconds: number;
+      events: Array<{ event_type_label: string; model_label: string }>;
     };
     assert.equal(timeline.budget, 5);
     assert.ok(timeline.spend_points.length >= 2);
+    assert.ok(timeline.token_points.length >= 2);
+    assert.ok(timeline.burn_rate_points.length >= 2);
+    assert.ok(timeline.burn_window_seconds >= 60);
+    assert.equal(timeline.events.length, 2);
+    assert.equal(timeline.events[0]?.model_label, "gpt-5.4-mini");
     const lastPoint = timeline.spend_points.at(-1);
     assert.ok(lastPoint);
     assert.ok(lastPoint.value > 0.25);
